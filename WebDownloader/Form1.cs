@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace WebDownloader
 {
     public partial class Form1 : Form
     {
+        string title = null;
+
         public Form1()
         {
             InitializeComponent();
@@ -29,22 +32,42 @@ namespace WebDownloader
             IEnumerable<VideoInfo> videoInfos = DownloadUrlResolver.GetDownloadUrls(textBox1.Text);
             VideoInfo video = videoInfos.First(p => p.VideoType == VideoType.Mp4 && p.Resolution == 360);
 
-            //VideoInfo video = videoInfos
-            //    .Where(info => info.CanExtractAudio)
-            //    .OrderByDescending(info => info.AudioBitrate)
-            //    .First();
-
             if (video.RequiresDecryption)
             {
                 DownloadUrlResolver.DecryptDownloadUrl(video);
             }
 
-            VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", RemoveIllegalPathCharacters(video.Title) + video.VideoExtension));
-            //AudioDownloader downloader = new AudioDownloader(video, Path.Combine("D:\\youtube", video.Title + video.AudioExtension));
+            VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", "input" + video.VideoExtension));
+            //VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", RemoveIllegalPathCharacters(video.Title) + video.VideoExtension));
             downloader.DownloadProgressChanged += Downloader_DownloadProgressChanged;
 
             Thread thread = new Thread(() => { downloader.Execute(); }) { IsBackground = true };
             thread.Start();
+
+            downloader.DownloadFinished += Downloader_DownloadFinished;
+            title = video.Title;
+        }
+
+        private void Downloader_DownloadFinished(object sender, EventArgs e)
+        {
+            Process cmd = new Process();
+            cmd.StartInfo.FileName = "cmd.exe";
+            cmd.StartInfo.RedirectStandardInput = true;
+            cmd.StartInfo.RedirectStandardOutput = true;
+            cmd.StartInfo.CreateNoWindow = false;
+            cmd.StartInfo.UseShellExecute = false;
+            cmd.Start();
+
+            cmd.StandardInput.WriteLine("D:");
+            cmd.StandardInput.WriteLine("cd youtube");
+            cmd.StandardInput.WriteLine("D:\\ffmpeg\\bin\\ffmpeg.exe -i input.mp4 -c:a copy -vn -sn output.m4a");
+            cmd.StandardInput.Flush();
+            cmd.StandardInput.Close();
+            cmd.WaitForExit();
+            Console.WriteLine(cmd.StandardOutput.ReadToEnd());
+
+            File.Move("D:\\youtube\\output.m4a", "D:\\youtube\\" + title + ".m4a");
+            File.Delete("D:\\youtube\\input.mp4");
         }
 
         private void Downloader_DownloadProgressChanged(object sender, ProgressEventArgs e)
