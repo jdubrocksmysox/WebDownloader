@@ -26,6 +26,8 @@ namespace WebDownloader
 
         private void button1_Click(object sender, EventArgs e)
         {
+            string downloadPath = Properties.Settings.Default.downloadPath;
+
             progressBar1.Minimum = 0;
             progressBar1.Maximum = 100;
 
@@ -37,7 +39,7 @@ namespace WebDownloader
                 DownloadUrlResolver.DecryptDownloadUrl(video);
             }
 
-            VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", "input" + video.VideoExtension));
+            VideoDownloader downloader = new VideoDownloader(video, Path.Combine(downloadPath, "input" + video.VideoExtension));
             //VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", RemoveIllegalPathCharacters(video.Title) + video.VideoExtension));
             downloader.DownloadProgressChanged += Downloader_DownloadProgressChanged;
 
@@ -50,6 +52,9 @@ namespace WebDownloader
 
         private void Downloader_DownloadFinished(object sender, EventArgs e)
         {
+            string downloadPath = Properties.Settings.Default.downloadPath;
+            string ffmpeg = Properties.Settings.Default.ffmpeg;
+
             Process cmd = new Process();
             cmd.StartInfo.FileName = "cmd.exe";
             cmd.StartInfo.RedirectStandardInput = true;
@@ -58,16 +63,16 @@ namespace WebDownloader
             cmd.StartInfo.UseShellExecute = false;
             cmd.Start();
 
-            cmd.StandardInput.WriteLine("D:");
-            cmd.StandardInput.WriteLine("cd youtube");
-            cmd.StandardInput.WriteLine("D:\\ffmpeg\\bin\\ffmpeg.exe -i input.mp4 -c:a copy -vn -sn output.m4a");
+            
+            cmd.StandardInput.WriteLine("cd " + downloadPath);
+            cmd.StandardInput.WriteLine(ffmpeg + " -i input.mp4 -c:a copy -vn -sn output.m4a");
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             Console.WriteLine(cmd.StandardOutput.ReadToEnd());
 
-            File.Move("D:\\youtube\\output.m4a", "D:\\youtube\\" + title + ".m4a");
-            File.Delete("D:\\youtube\\input.mp4");
+            //File.Move("D:\\youtube\\output.m4a", "D:\\youtube\\" + title + ".m4a");
+            //File.Delete("D:\\youtube\\input.mp4");
         }
 
         private void Downloader_DownloadProgressChanged(object sender, ProgressEventArgs e)
@@ -85,6 +90,12 @@ namespace WebDownloader
             string regexSearch = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
             var r = new Regex(string.Format("[{0}]", Regex.Escape(regexSearch)));
             return r.Replace(path, "");
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Form2 form2 = new Form2();
+            form2.ShowDialog();
         }
     }
 }
