@@ -57,22 +57,21 @@ namespace WebDownloader
 
             Process cmd = new Process();
             cmd.StartInfo.FileName = "cmd.exe";
+            cmd.StartInfo.WorkingDirectory = downloadPath;
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
             cmd.StartInfo.CreateNoWindow = false;
             cmd.StartInfo.UseShellExecute = false;
             cmd.Start();
 
-            
-            cmd.StandardInput.WriteLine("cd " + downloadPath);
             cmd.StandardInput.WriteLine(ffmpeg + " -i input.mp4 -c:a copy -vn -sn output.m4a");
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             Console.WriteLine(cmd.StandardOutput.ReadToEnd());
 
-            //File.Move("D:\\youtube\\output.m4a", "D:\\youtube\\" + title + ".m4a");
-            //File.Delete("D:\\youtube\\input.mp4");
+            File.Move(Path.Combine(downloadPath, "output.m4a"), Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".m4a"));
+            File.Delete(Path.Combine(downloadPath, "input.mp4"));
         }
 
         private void Downloader_DownloadProgressChanged(object sender, ProgressEventArgs e)
