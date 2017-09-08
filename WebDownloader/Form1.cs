@@ -48,6 +48,7 @@ namespace WebDownloader
 
             downloader.DownloadFinished += Downloader_DownloadFinished;
             title = video.Title;
+
         }
 
         private void Downloader_DownloadFinished(object sender, EventArgs e)
@@ -55,23 +56,30 @@ namespace WebDownloader
             string downloadPath = Properties.Settings.Default.downloadPath;
             string ffmpeg = Properties.Settings.Default.ffmpeg;
 
+
             Process cmd = new Process();
             cmd.StartInfo.FileName = "cmd.exe";
             cmd.StartInfo.WorkingDirectory = downloadPath;
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = false;
+            cmd.StartInfo.CreateNoWindow = true;
             cmd.StartInfo.UseShellExecute = false;
             cmd.Start();
 
-            cmd.StandardInput.WriteLine(ffmpeg + " -i input.mp4 -c:a copy -vn -sn output.m4a");
+            //" -i input.mp4 -c:a copy -vn -sn output.m4a"
+            cmd.StandardInput.WriteLine(ffmpeg + "  -i input.mp4 -vn -f mp3 -ab 64k output.mp3");
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             Console.WriteLine(cmd.StandardOutput.ReadToEnd());
 
-            File.Move(Path.Combine(downloadPath, "output.m4a"), Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".m4a"));
+            File.Move(Path.Combine(downloadPath, "output.mp3"), Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
             File.Delete(Path.Combine(downloadPath, "input.mp4"));
+
+            TagLib.File f = TagLib.File.Create(Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
+            f.Tag.Title = title;
+            f.Save();
+
         }
 
         private void Downloader_DownloadProgressChanged(object sender, ProgressEventArgs e)
