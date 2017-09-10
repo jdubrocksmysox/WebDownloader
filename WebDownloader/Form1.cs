@@ -24,7 +24,7 @@ namespace WebDownloader
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void downloadButton(object sender, EventArgs e)
         {
             string downloadPath = Properties.Settings.Default.downloadPath;
 
@@ -32,15 +32,15 @@ namespace WebDownloader
             progressBar1.Maximum = 100;
 
             IEnumerable<VideoInfo> videoInfos = DownloadUrlResolver.GetDownloadUrls(textBox1.Text);
-            VideoInfo video = videoInfos.First(p => p.VideoType == VideoType.Mp4 && p.Resolution == 360);
+            VideoInfo video = videoInfos.First(p => p.VideoType == VideoType.Mp4 && p.Resolution == Convert.ToInt32(comboBox1.Text));
 
             if (video.RequiresDecryption)
             {
                 DownloadUrlResolver.DecryptDownloadUrl(video);
             }
 
-            VideoDownloader downloader = new VideoDownloader(video, Path.Combine(downloadPath, "input" + video.VideoExtension));
-            //VideoDownloader downloader = new VideoDownloader(video, Path.Combine("D:\\youtube", RemoveIllegalPathCharacters(video.Title) + video.VideoExtension));
+            VideoDownloader downloader = new VideoDownloader(video, Path.Combine(downloadPath, RemoveIllegalPathCharacters(video.Title) + video.VideoExtension));
+
             downloader.DownloadProgressChanged += Downloader_DownloadProgressChanged;
 
             Thread thread = new Thread(() => { downloader.Execute(); }) { IsBackground = true };
@@ -53,32 +53,38 @@ namespace WebDownloader
 
         private void Downloader_DownloadFinished(object sender, EventArgs e)
         {
-            string downloadPath = Properties.Settings.Default.downloadPath;
-            string ffmpeg = Properties.Settings.Default.ffmpeg;
+            if (checkBox1.Checked)
+            {
+                string downloadPath = Properties.Settings.Default.downloadPath;
+                string ffmpeg = Properties.Settings.Default.ffmpeg;
+
+                File.Move(Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp4"), Path.Combine(downloadPath, "input.mp4"));
+
+                Process cmd = new Process();
+                cmd.StartInfo.FileName = "cmd.exe";
+                cmd.StartInfo.WorkingDirectory = downloadPath;
+                cmd.StartInfo.RedirectStandardInput = true;
+                cmd.StartInfo.RedirectStandardOutput = true;
+                cmd.StartInfo.CreateNoWindow = false;
+                cmd.StartInfo.UseShellExecute = false;
+                cmd.Start();
+
+                //cmd.StandardInput.WriteLine(@ffmpeg + " -i input.mp4 -c:a copy -vn -sn output.m4a");
+                cmd.StandardInput.WriteLine(@ffmpeg + " -i input.mp4 -vn -f mp3 -ab 32k output.mp3");
+                cmd.StandardInput.Flush();
+                cmd.StandardInput.Close();
+                cmd.WaitForExit();
+                Console.WriteLine(cmd.StandardOutput.ReadToEnd());
 
 
-            Process cmd = new Process();
-            cmd.StartInfo.FileName = "cmd.exe";
-            cmd.StartInfo.WorkingDirectory = downloadPath;
-            cmd.StartInfo.RedirectStandardInput = true;
-            cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = true;
-            cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
+                
+                File.Move(Path.Combine(downloadPath, "output.mp3"), Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
+                File.Delete(Path.Combine(downloadPath, "input.mp4"));
 
-            //" -i input.mp4 -c:a copy -vn -sn output.m4a"
-            cmd.StandardInput.WriteLine(ffmpeg + "  -i input.mp4 -vn -f mp3 -ab 64k output.mp3");
-            cmd.StandardInput.Flush();
-            cmd.StandardInput.Close();
-            cmd.WaitForExit();
-            Console.WriteLine(cmd.StandardOutput.ReadToEnd());
-
-            File.Move(Path.Combine(downloadPath, "output.mp3"), Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
-            File.Delete(Path.Combine(downloadPath, "input.mp4"));
-
-            TagLib.File f = TagLib.File.Create(Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
-            f.Tag.Title = title;
-            f.Save();
+                TagLib.File f = TagLib.File.Create(Path.Combine(downloadPath, RemoveIllegalPathCharacters(title) + ".mp3"));
+                f.Tag.Title = title;
+                f.Save();
+            }
 
         }
 
@@ -99,7 +105,7 @@ namespace WebDownloader
             return r.Replace(path, "");
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void settingsButton(object sender, EventArgs e)
         {
             Form2 form2 = new Form2();
             form2.ShowDialog();

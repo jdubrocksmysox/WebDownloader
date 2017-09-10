@@ -20,7 +20,7 @@ namespace WebDownloader
             textBox2.AppendText(Properties.Settings.Default.ffmpeg);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void applyButton(object sender, EventArgs e)
         {
             Properties.Settings.Default.downloadPath = textBox1.Text;
             Properties.Settings.Default.ffmpeg = textBox2.Text;
@@ -29,7 +29,7 @@ namespace WebDownloader
             this.Close(); 
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void resetButton(object sender, EventArgs e)
         {
             Properties.Settings.Default.downloadPath = @"C:\";
             Properties.Settings.Default.ffmpeg = @"C:\ffmpeg\bin\ffmpeg.exe";
